@@ -13,11 +13,12 @@ finish-args:
   - --share=ipc
   # 3D hardware acceleration for Minecraft
   - --device=dri
-  # Display servers: native Wayland, X11 where there is no Wayland. The launch script is what
-  # makes the first half true — Electron starts its X11 backend unless it is told to look, and
-  # a Wayland-only session hands out no X11 socket for that backend to find.
-  - --socket=wayland
-  - --socket=fallback-x11
+  # X11, and through Xwayland on a Wayland session. The launcher alone would be happier with
+  # a Wayland socket — Electron draws natively there — but the game would not: the GLFW that
+  # LWJGL ships with Minecraft is built for X11 only, and on a session with no X server it
+  # stops at "The DISPLAY environment variable is missing" before a window exists. A socket
+  # set that starts the launcher and then loses the game is the worse of the two.
+  - --socket=x11
   # Audio
   - --socket=pulseaudio
   # Discord RPC integration
@@ -56,17 +57,6 @@ modules:
           # home here, so HOME points at the app's own XDG data directory and the install lands in
           # ~/.var/app/com.paradoxclient.ParadoxClient/data with everything else.
           - export HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-          # Which display server Electron talks to. It starts its X11 backend unless told
-          # otherwise and exits when there is no X server to talk to, which is what a
-          # Wayland-only session gives it. `auto` reads XDG_SESSION_TYPE and is right whenever
-          # that variable is; when the sandbox holds a Wayland socket and no display at all,
-          # there is nothing to decide and nothing to fall back to.
-          - |
-            if [ -z "${DISPLAY:-}" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
-              set -- --ozone-platform=wayland "$@"
-            else
-              set -- --ozone-platform-hint=auto "$@"
-            fi
           - exec zypak-wrapper /app/paradox-client/paradox-launcher "$@"
 
       - type: file
