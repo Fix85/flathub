@@ -1,9 +1,9 @@
 app-id: com.paradoxclient.ParadoxClient
 runtime: org.freedesktop.Platform
-runtime-version: '25.08'
+runtime-version: '26.08'
 sdk: org.freedesktop.Sdk
 base: org.electronjs.Electron2.BaseApp
-base-version: '25.08'
+base-version: '26.08'
 command: paradox-client
 separate-locales: false
 
@@ -13,14 +13,13 @@ finish-args:
   - --share=ipc
   # 3D hardware acceleration for Minecraft
   - --device=dri
-  # Display servers: native Wayland with X11 fallback
+  # Display servers: native Wayland, X11 where there is no Wayland. The launch script is what
+  # makes the first half true — Electron starts its X11 backend unless it is told to look, and
+  # a Wayland-only session hands out no X11 socket for that backend to find.
   - --socket=wayland
   - --socket=fallback-x11
   # Audio
   - --socket=pulseaudio
-  # Keep standard Minecraft data persistent in the sandbox
-  - --persist=.minecraft
-  - --persist=.paradoxclient
   # Discord RPC integration
   - --filesystem=xdg-run/app/com.discordapp.Discord:create
   # System tray and notifications
@@ -38,13 +37,36 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        url: https://paradoxclient.com/downloads/launcher/Paradox-Client-0.1.28-x86_64.AppImage
-        sha256: 1ee265e0530a135061d12eca1f36ed33e7ae52bd5b57e572d026764d57784883
+        url: https://paradoxclient.com/downloads/launcher/Paradox-Client-0.1.30-x86_64.AppImage
+        sha256: 30fe56bce6c39980daa8cd3207bf670a1bb3a61173da266ab502da73e83ab95d
         dest-filename: paradox-client.appimage
+        x-checker-data:
+          type: html
+          url: https://paradoxclient.com/api/launcher/latest-linux.yml
+          version-pattern: 'version:\s*([\d.]+)'
+          url-template: https://paradoxclient.com/downloads/launcher/Paradox-Client-$version-x86_64.AppImage
 
       - type: script
         dest-filename: paradox-client
         commands:
+          # Where the launcher writes. Its own files — settings, accounts, profiles, the client
+          # release and the Java runtime — go to $XDG_CONFIG_HOME/paradoxclient, which the sandbox
+          # already keeps. The game itself goes to the standard Minecraft directory, $HOME/.minecraft,
+          # so that worlds and options are not locked inside one launcher's folder; there is no real
+          # home here, so HOME points at the app's own XDG data directory and the install lands in
+          # ~/.var/app/com.paradoxclient.ParadoxClient/data with everything else.
+          - export HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+          # Which display server Electron talks to. It starts its X11 backend unless told
+          # otherwise and exits when there is no X server to talk to, which is what a
+          # Wayland-only session gives it. `auto` reads XDG_SESSION_TYPE and is right whenever
+          # that variable is; when the sandbox holds a Wayland socket and no display at all,
+          # there is nothing to decide and nothing to fall back to.
+          - |
+            if [ -z "${DISPLAY:-}" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+              set -- --ozone-platform=wayland "$@"
+            else
+              set -- --ozone-platform-hint=auto "$@"
+            fi
           - exec zypak-wrapper /app/paradox-client/paradox-launcher "$@"
 
       - type: file
