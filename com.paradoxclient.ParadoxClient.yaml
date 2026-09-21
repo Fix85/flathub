@@ -38,8 +38,8 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        url: https://paradoxclient.com/downloads/launcher/Paradox-Client-0.1.30-x86_64.AppImage
-        sha256: 30fe56bce6c39980daa8cd3207bf670a1bb3a61173da266ab502da73e83ab95d
+        url: https://paradoxclient.com/downloads/launcher/Paradox-Client-0.1.31-x86_64.AppImage
+        sha256: 597387268b2485f1bccf0f1a3ccbd04426c97ca54a8ded7954f20ff4a850f9ff
         dest-filename: paradox-client.appimage
         x-checker-data:
           type: html

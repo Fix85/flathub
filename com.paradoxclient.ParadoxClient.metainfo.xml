@@ -31,6 +31,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.31" date="2026-09-21">
+      <description>
+        <p>The launcher's Mission Control log is in English.</p>
+      </description>
+    </release>
     <release version="0.1.30" date="2026-09-20">
       <description>
         <p>Interface polish: launch and stop animations, sidebar layout, system theme handling and the Discord icon.</p>
