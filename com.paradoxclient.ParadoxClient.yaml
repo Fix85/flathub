@@ -8,22 +8,12 @@ command: paradox-client
 separate-locales: false
 
 finish-args:
-  # Network access for updates, Java runtime downloads, auth and multiplayer
   - --share=network
   - --share=ipc
-  # 3D hardware acceleration for Minecraft
   - --device=dri
-  # X11, and through Xwayland on a Wayland session. The launcher alone would be happier with
-  # a Wayland socket — Electron draws natively there — but the game would not: the GLFW that
-  # LWJGL ships with Minecraft is built for X11 only, and on a session with no X server it
-  # stops at "The DISPLAY environment variable is missing" before a window exists. A socket
-  # set that starts the launcher and then loses the game is the worse of the two.
   - --socket=x11
-  # Audio
   - --socket=pulseaudio
-  # Discord RPC integration
   - --filesystem=xdg-run/app/com.discordapp.Discord:create
-  # System tray and notifications
   - --talk-name=org.kde.StatusNotifierWatcher
   - --talk-name=org.freedesktop.Notifications
 
@@ -38,8 +28,8 @@ modules:
     buildsystem: simple
     sources:
       - type: file
-        url: https://paradoxclient.com/downloads/launcher/Paradox-Client-0.1.31-x86_64.AppImage
-        sha256: 597387268b2485f1bccf0f1a3ccbd04426c97ca54a8ded7954f20ff4a850f9ff
+        url: https://paradoxclient.com/downloads/launcher/Paradox-Client-0.1.34-x86_64.AppImage
+        sha256: ed2661325b85338a50a157a9a50f314e3c1dea856648fac346497aaaddfc5f3a
         dest-filename: paradox-client.appimage
         x-checker-data:
           type: html
@@ -50,34 +40,14 @@ modules:
       - type: script
         dest-filename: paradox-client
         commands:
-          # Where the launcher writes. Its own files — settings, accounts, profiles, the client
-          # release and the Java runtime — go to $XDG_CONFIG_HOME/paradoxclient, which the sandbox
-          # already keeps. The game itself goes to the standard Minecraft directory, $HOME/.minecraft,
-          # so that worlds and options are not locked inside one launcher's folder; there is no real
-          # home here, so HOME points at the app's own XDG data directory and the install lands in
-          # ~/.var/app/com.paradoxclient.ParadoxClient/data with everything else.
           - export HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
           - exec zypak-wrapper /app/paradox-client/paradox-launcher "$@"
 
-      - type: file
-        path: com.paradoxclient.ParadoxClient.metainfo.xml
-
-      - type: file
-        path: com.paradoxclient.ParadoxClient.desktop
-
-      - type: file
-        path: com.paradoxclient.ParadoxClient.png
-
     build-commands:
-      # Extract AppImage
       - chmod +x ./paradox-client.appimage
       - ./paradox-client.appimage --appimage-extract
       - mv squashfs-root "${FLATPAK_DEST}/paradox-client"
-
-      # Install launch script
       - install -Dm755 paradox-client "${FLATPAK_DEST}/bin/paradox-client"
-
-      # Install desktop integration, metainfo, and icon
-      - install -Dm644 com.paradoxclient.ParadoxClient.desktop "${FLATPAK_DEST}/share/applications/${FLATPAK_ID}.desktop"
-      - install -Dm644 com.paradoxclient.ParadoxClient.metainfo.xml "${FLATPAK_DEST}/share/metainfo/${FLATPAK_ID}.metainfo.xml"
-      - install -Dm644 com.paradoxclient.ParadoxClient.png "${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png"
+      - install -Dm644 "${FLATPAK_DEST}/paradox-client/usr/share/applications/${FLATPAK_ID}.desktop" -t "${FLATPAK_DEST}/share/applications"
+      - install -Dm644 "${FLATPAK_DEST}/paradox-client/usr/share/metainfo/${FLATPAK_ID}.metainfo.xml" -t "${FLATPAK_DEST}/share/metainfo"
+      - install -Dm644 "${FLATPAK_DEST}/paradox-client/usr/share/icons/hicolor/512x512/apps/${FLATPAK_ID}.png" -t "${FLATPAK_DEST}/share/icons/hicolor/512x512/apps"
